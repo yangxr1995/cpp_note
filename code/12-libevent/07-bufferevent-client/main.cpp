@@ -56,10 +56,9 @@ void bev_event_cb_client(struct bufferevent *bev, short what, void *ctx) {
     }
 }
 
-
 // 接收到对端用户数据后，调用bev_read_cb
 void bev_read_cb(struct bufferevent *bev, void *ctx) {
-    cout << "server : " << __PRETTY_FUNCTION__ << endl;
+    // cout << "server : " << __PRETTY_FUNCTION__ << endl;
     char buf[4096];
     int cnt;
     // 读缓存的高水位会影响一次最多读多少
@@ -67,7 +66,7 @@ void bev_read_cb(struct bufferevent *bev, void *ctx) {
     buf[cnt] = 0;
     file_data += buf;
     recv_cnt += cnt;
-    cout << "cnt : " << cnt << endl;
+    // cout << "server: cnt : " << cnt << endl;
     // cout << buf << flush;
     // bufferevent_write(bev, "OK", 3);
 }
@@ -75,7 +74,6 @@ void bev_read_cb(struct bufferevent *bev, void *ctx) {
 // 三次握手完成后, 调用bev_write_cb
 void bev_write_cb(struct bufferevent *bev, void *ctx) {
     cout << "server : " << __PRETTY_FUNCTION__ << endl;
-
 }
 
 // 四次挥手后，调用bev_event_cb

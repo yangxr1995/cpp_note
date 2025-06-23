@@ -9,6 +9,8 @@
 
 using namespace std;
 
+static unsigned int timeout_cnt = 0;
+
 // 接收到对端用户数据后，调用bev_read_cb
 void bev_read_cb(struct bufferevent *bev, void *ctx) {
     cout << __PRETTY_FUNCTION__ << endl;
@@ -22,7 +24,8 @@ void bev_read_cb(struct bufferevent *bev, void *ctx) {
         return;
     }
     cout << "cnt : " << cnt << endl;
-    cout << buf << flush;
+    cout << "--" << buf << "--" << flush;
+    timeout_cnt = 0;
     // bufferevent_write(bev, "OK", 3);
 }
 
@@ -39,12 +42,30 @@ void bev_event_cb(struct bufferevent *bev, short what, void *ctx) {
         cout << "BEV_EVENT_TIMEOUT :";
         if (what & BEV_EVENT_READING) {
             cout << "BEV_EVENT_READING" << endl;
+
+            if (timeout_cnt >= 3) {
+                cout << "close connect" << endl;
+                bufferevent_free(bev);
+            }
+            else {
+                timeout_cnt++;
+                bufferevent_enable(bev, EV_READ);
+            }
         }
         if (what & BEV_EVENT_WRITING) {
             cout << "BEV_EVENT_WRITING" << endl;
         }
     }
 
+    if (what & BEV_EVENT_EOF) {
+        cout << "BEV_EVENT_EOF" << endl;
+        bufferevent_free(bev);
+    }
+
+    if (what & BEV_EVENT_ERROR) {
+        cout << "BEV_EVENT_ERROR" << endl;
+        bufferevent_free(bev);
+    }
 }
 
 void listen_cb(struct evconnlistener *listener, evutil_socket_t cfd, 
@@ -52,24 +73,29 @@ void listen_cb(struct evconnlistener *listener, evutil_socket_t cfd,
     cout << __PRETTY_FUNCTION__ << endl;
     event_base *base = (event_base *)arg;
 
+    // 1. 对通信套接字绑定bufferevent
     struct bufferevent *bev = bufferevent_socket_new(base, cfd, BEV_OPT_CLOSE_ON_FREE);
+
+    // 2. 设置参数
 
     // 设置读缓存
     // 数据不足高水位时，从fd读取
     // 数据超过低水位时，调用读回调
-    bufferevent_setwatermark(bev, EV_READ, 10, 20);
+    bufferevent_setwatermark(bev, EV_READ, 15, 20);
 
     // 设置写缓存
     // 数据不足低水位时，调用写回调
     // 高水位无效
-    bufferevent_setwatermark(bev, EV_WRITE, 5, 0);
+    bufferevent_setwatermark(bev, EV_WRITE, 20, 0);
 
     // 超过5s没有新的数据到输入缓存，则调用读回调
-    // struct timeval tv_read = {5, 0};
-    // bufferevent_set_timeouts(bev, &tv_read, NULL);
+    struct timeval tv_read = {5, 0};
+    bufferevent_set_timeouts(bev, &tv_read, NULL);
 
+    // 3. 设置回调函数
     bufferevent_setcb(bev, bev_read_cb, bev_write_cb, bev_event_cb, bev);
 
+    // 4. 开启读写监听
     bufferevent_enable(bev, EV_READ | EV_WRITE);
 }
 

@@ -1,0 +1,3 @@
+CompileFlags:
+  Add: [ -I/root/cpp_note/code/12-libevent/build/libevent-2.1.12-stable/install/include/,
+        -I/root/cpp_note/code/12-libevent/build/zlib-1.2.13/install/include/ ]

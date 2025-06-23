@@ -13,6 +13,7 @@
 #include <netinet/in.h>
 #include <string>
 #include <sys/socket.h>
+#include <zlib.h>
 
 using namespace std;
 
@@ -27,6 +28,7 @@ class conn {
         :_bev_filter(bev_filter), _file_name("") {
             _is_ack_ok = false;
             _fp = nullptr;
+            _z = new z_stream();
         }
         void set_bev_filter(struct bufferevent *filter) {
             _bev_filter = filter;
@@ -37,6 +39,9 @@ class conn {
         }
         void set_file_name(const string &name) {
             _file_name = name;
+        }
+        z_stream * &z() {
+            return _z;
         }
         void set_file_size(size_t sz) {
             _file_sz = sz;
@@ -92,9 +97,26 @@ class conn {
             }
             return fwrite(buf, 1, sz, _fp);
         }
+        void compress_init() {
+            deflateInit(_z, Z_DEFAULT_COMPRESSION);
+            _is_compress = true;
+        }
+        void uncompress_init() {
+            inflateInit(_z);
+            _is_compress = false;
+        }
         ~conn() {
             if (_fp)
                 fclose(_fp);
+
+            if (_z) {
+                if (_is_compress)
+                    deflateEnd(_z);
+                else
+                    inflateEnd(_z);
+                delete _z;
+            }
+
             bufferevent_free(_bev_filter);
         }
     private:
@@ -104,6 +126,8 @@ class conn {
         size_t _remain_bytes;
         bool _is_ack_ok;
         FILE *_fp;
+        z_stream *_z;
+        bool _is_compress;
 };
 
 enum bufferevent_filter_result bev_filter_input_client(
@@ -128,13 +152,61 @@ enum bufferevent_filter_result bev_filter_output_client(
     int cnt;
     conn *c = (conn *)ctx;
 
-    cnt = evbuffer_remove(src, buf, sizeof(buf) - 1);
-
-    if (c->is_ack_ok()) {
-        // 压缩
+    // 服务器未获得文件元信息，则不压缩
+    if (!c->is_ack_ok()) {
+        cnt = evbuffer_remove(src, buf, sizeof(buf) - 1);
+        evbuffer_add(dst, buf, cnt);
+        return BEV_OK;
     }
 
-    evbuffer_add(dst, buf, cnt);
+    // 压缩数据
+
+    // 1. 获得原始数据.
+    //    在不移除或复制数据的情况下查看evbuffer的数据
+    //    获得evbuffer的数据的起始地址和长度
+    struct evbuffer_iovec vec_in[1];
+    cnt = evbuffer_peek(src,  // 被查看的evbuffer
+            -1,         // 需要查看的字节数，-1表示查看尽可能多的数据
+            nullptr,    // 指定开始查找数据的 evbuffer_ptr。NULL 表示从缓冲区开头开始
+            vec_in,     // iovec数组，用于输出数据
+            1);         // iovec数组的长度
+    if (cnt <= 0)
+        return BEV_NEED_MORE;
+
+    // 2. 准备压缩数据的存储空间.
+    //    在目的evbuffer上预分配空间，用于存储压缩后的数据
+    struct evbuffer_iovec vec_out[1];
+    evbuffer_reserve_space(dst, vec_in[0].iov_len * 2, vec_out, 1);
+
+    // 3. 填充压缩参数
+    z_stream *z = c->z();
+    z->avail_in = vec_in[0].iov_len; // 原始数据的长度
+    z->next_in = (Byte *)vec_in[0].iov_base; // 原始数据的地址
+    z->avail_out = vec_out[0].iov_len; // 可用存储压缩后数据的空间大小
+    z->next_out = (Byte *)vec_out[0].iov_base; // 可用存储压缩后数据的空间地址
+
+    // 4. 进行压缩
+    // z既是输入参数，也是输出参数
+    if (deflate(z, Z_SYNC_FLUSH) != Z_OK) {
+        cout << "deflate err" << endl;
+        exit(1);
+    }
+
+    int  original_data_len, compressed_data_len;
+    // z->avail_in : 剩余未参与压缩的原始数据长度
+    original_data_len = vec_in[0].iov_len - z->avail_in; // 参与压缩的数据长度
+    // z->avail_out: 用于存储压缩数据的空间的剩余量
+    compressed_data_len = vec_out[0].iov_len - z->avail_out; // 压缩数据的长度
+    
+    // 5. 校对剩余原始数据
+    //    由于只有部分原始数据参与了压缩，所以需要删除那部分的原始数据
+    evbuffer_drain(src, original_data_len);
+
+    // 6. 提交压缩数据
+    vec_out[0].iov_len = compressed_data_len;
+    evbuffer_commit_space(dst, vec_out, 1);
+
+    cout << "origin : " << original_data_len << ", compress : " << compressed_data_len << endl;
 
     return BEV_OK;
 }
@@ -147,13 +219,61 @@ enum bufferevent_filter_result bev_filter_input_server(
     char buf[256];
     int cnt;
 
-    cnt = evbuffer_remove(src, buf, sizeof(buf));
-
-    if (!c->file_name().empty()) {
-        // 解压
+    // 未获得文件元信息，不进行解压
+    if (c->file_name().empty()) {
+        cnt = evbuffer_remove(src, buf, sizeof(buf));
+        evbuffer_add(dst, buf, cnt);
+        return BEV_OK;
     }
 
-    evbuffer_add(dst, buf, cnt);
+    // 进行解压
+
+    // 1. 获得压缩数据.
+    //    在不移除或复制数据的情况下查看evbuffer的数据
+    //    获得evbuffer的数据的起始地址和长度
+    struct evbuffer_iovec vec_in[1];
+    cnt = evbuffer_peek(src,  // 被查看的evbuffer
+            -1,         // 需要查看的字节数，-1表示查看尽可能多的数据
+            nullptr,    // 指定开始查找数据的 evbuffer_ptr。NULL 表示从缓冲区开头开始
+            vec_in,     // iovec数组，用于输出数据
+            1);         // iovec数组的长度
+    if (cnt <= 0)
+        return BEV_NEED_MORE;
+
+    // 2. 准备原始数据的存储空间.
+    //    在目的evbuffer上预分配空间，用于存储解压后的数据
+    struct evbuffer_iovec vec_out[1];
+    evbuffer_reserve_space(dst, vec_in[0].iov_len * 2, vec_out, 1);
+
+    // 3. 填充解压缩参数
+    z_stream *z = c->z();
+    z->avail_in = vec_in[0].iov_len; // 压缩数据的长度
+    z->next_in = (Byte *)vec_in[0].iov_base; // 压缩数据的地址
+    z->avail_out = vec_out[0].iov_len; // 可用存储解压缩后数据的空间大小
+    z->next_out = (Byte *)vec_out[0].iov_base; // 可用存储解压缩后数据的空间地址
+
+    // 4. 进行解压缩
+    // z既是输入参数，也是输出参数
+    if (inflate(z, Z_SYNC_FLUSH) != Z_OK) {
+        cout << "inflate err" << endl;
+        exit(1);
+    }
+
+    int  nread, nwrite;
+    // z->avail_in : 剩余未参与解压缩的压缩数据长度
+    nread = vec_in[0].iov_len - z->avail_in; // 参与解压缩的数据长度
+    // z->avail_out: 用于存储解压缩数据的空间的剩余量
+    nwrite = vec_out[0].iov_len - z->avail_out; // 原始数据的长度
+    
+    // 5. 校对剩余压缩数据
+    //    由于只有部分压缩数据参与了解压，所以需要删除那部分的压缩数据
+    evbuffer_drain(src, nread);
+
+    // 6. 提交原始数据
+    vec_out[0].iov_len = nwrite;
+    evbuffer_commit_space(dst, vec_out, 1);
+
+    cout << "origin : " << nread << ", decompress : " << nwrite << endl;
 
     return BEV_OK;
 }
@@ -251,6 +371,8 @@ void bev_event_cb_client(struct bufferevent *bev, short what, void *ctx) {
         cout << "BEV_EVENT_CONNECTED" << endl;
 
         conn *c = new conn();
+        
+        c->compress_init();
 
         c->set_file(g_send_file_name);
 
@@ -385,6 +507,8 @@ void listen_cb(struct evconnlistener *listener, evutil_socket_t cfd,
     bufferevent_enable(bev_filter, EV_READ | EV_WRITE);
 
     c->set_bev_filter(bev_filter);
+
+    c->uncompress_init();
 }
 
 int main (int argc, char *argv[]) {
