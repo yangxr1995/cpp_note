@@ -1,0 +1,7 @@
+    #include <iostream>
+    #include "slib.h"
+    using namespace std;
+    void slib() {
+    cout << "slib ${version}" << endl;
+    }
+    
