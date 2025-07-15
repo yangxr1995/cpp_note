@@ -374,7 +374,7 @@ set(VAR1 "VAR1 modify" CACHE STRING "var1 cache var" FORCE)
 message("VAR1 : ${VAR1}") # VAR1 modify 
 ```
 
-option
+#### option
 快速定义bool类型的缓存变量 
 ```bash
 option(<variable> "<docstring>" <value>)
@@ -1230,7 +1230,6 @@ endfunction()
 - 函数和宏的区别
   - 函数的参数是变量，宏的参数是替换
   - 函数内部的变量作用域是函数内
-
   - 函数可以return
 - 函数和宏的相同
   - 传递参数的方式相同
@@ -2168,18 +2167,24 @@ install(EXPORT slib
 )
 
 # 注意：在 cmake 配置阶段就会执行，
-# 所以一定要设置 CMAKE_INSTALL_PREFIX
+# 导致 CMAKE_PREFIX_PATH 可能无效
+# 所以write_basic_package_version_file 可以先生成Version文件
+# 在install时安装version文件 
 #
 # 写入版本信息 
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(
     # 文件路径
-    ${CMAKE_INSTALL_PREFIX}/config/slib-${version}/slibConfigVersion.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake
     # 版本
     VERSION ${version}
     # 版本兼容方式，主版本号兼容
     COMPATIBILITY SameMajorVersion
 )
+
+install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake 
+    DESTINATION config)
 ```
 
 ```bash
@@ -2555,4 +2560,37 @@ gtest_discover_tests(main)
 # 启动测试
 enable_testing()
 ```
+
+
+# 附录
+## 重要变量
+- CMAKE_CURRENT_SOURCE_DIR : 当前执行的cmake文件的源目录，也就是 `cmake -S <源目录> -B <bin目录>` 指定的源目录
+- CMAKE_CURRENT_LIST_DIR : 当前执行的cmake文件的目录，如果 include xxx.cmake，那么当前目录会切换到 xxx.cmake所在的目录
+  - CMAKE_CURRENT_LIST_DIR 和 CMAKE_CURRENT_SOURCE_DIR 的差别
+test.cmake的目录和主CMakeLists.txt的目录不同，展示 CMAKE_CURRENT_SOURCE_DIR 和 CMAKE_CURRENT_LIST_DIR的效果: 
+```bash
+# cmake/test.cmake
+message("--- CMAKE_CURRENT_LIST_DIR : ${CMAKE_CURRENT_LIST_DIR}")
+message("--- CMAKE_CURRENT_SOURCE_DIR : ${CMAKE_CURRENT_SOURCE_DIR}")
+function(test)
+    message("CMAKE_CURRENT_LIST_DIR : ${CMAKE_CURRENT_LIST_DIR}")
+    message("CMAKE_CURRENT_SOURCE_DIR : ${CMAKE_CURRENT_SOURCE_DIR}")
+endfunction()
+```
+```bash
+# CMakeLists.txt
+include(cmake/test.cmake) 
+# 打印 
+# --- CMAKE_CURRENT_LIST_DIR : ./cmake/
+# --- CMAKE_CURRENT_SOURCE_DIR : ./
+
+test()
+# 打印
+# CMAKE_CURRENT_LIST_DIR : ./
+# CMAKE_CURRENT_SOURCE_DIR : ./
+```
+
+
+CMAKE_BUILD_TYPE : 指定编译类型, Debug Release RelWithDebInfo MinSizeRel
+PROJECT_NAME : project() 设置的项目名称
 
