@@ -331,6 +331,46 @@ add_executable(test_xlog main.cc)
 target_link_libraries(test_xlog xlog)
 ```
 
+## windows下动态库头文件设置
+
+windows的动态库由特殊处理。
+- xxx.dll : 动态库
+- xxx.lib : 描述库的导出符号信息
+为了生成lib文件，需要在声明符号时添加导入导出的标识
+```c
+#ifndef XLOG_H_
+#define XLOG_H_
+
+// 非windows环境不需要导出导入描述
+#ifndef _WIN32
+
+#define XCPP_API 
+
+#else
+// windows环境需要导出导入描述
+
+// xlog_EXPORTS 由cmake自动生成
+// 如果cmake编译lib，则会生成宏 xlog_EXPORTS
+#ifdef xlog_EXPORTS
+// 编译库需要修饰导出
+#define XCPP_API __declspec(dllexport)
+#else
+// 链接库需要修饰导入
+#define XCPP_API __declspec(dllimport)
+#endif
+
+#endif
+
+class XCPP_API xlog {
+    public:
+        xlog();
+};
+
+#endif
+
+
+```
+
 # cmake主要语法
 
 ## 变量

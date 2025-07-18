@@ -54,6 +54,7 @@ auto_ptr<Test> p2 = p1; // p1 内部的指针置为nullptr
 p2->show();
 p1->show(); // error
 ```
+
 ### scoped_ptr
 scoped_ptr不是c++11的标准，而是boost的实现，特点是严格了拷贝构造和赋值操作。
 

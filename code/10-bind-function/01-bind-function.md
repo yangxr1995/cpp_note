@@ -1,6 +1,5 @@
 # 模板的特例化和实参推演
 ## 特例化
-
 特例化分为完全特例化和部分特例化，
 完全特例化是在定义类时用确定类型对类进行特例化如
 ```cc
@@ -363,6 +362,22 @@ int main (int argc, char *argv[]) {
     return 0;
 }
 ```
+
+### bind绑定成员函数
+```cc
+class ThreadPool {
+    private:
+        void ThreadFunc(); 
+        static void ThreadFunc2();
+}
+
+// 绑定non-static成员函数必须要 &
+threads_.emplace_back(new Thread(std::bind(&ThreadPool::ThreadFunc, this)));
+// 绑定static成员函数可以不要 &
+threads_.emplace_back(new Thread(std::bind(&ThreadPool::ThreadFunc)));
+threads_.emplace_back(new Thread(std::bind(ThreadPool::ThreadFunc)));
+```
+在 std::bind 中使用 & 符号绑定非静态成员函数是必要的，因为它用于获取成员函数的地址，并且成员函数的地址需要包含类的信息。
 
 # lambada
 lambada的作用是快速定义函数对象

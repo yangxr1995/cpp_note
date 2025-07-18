@@ -1,0 +1,5 @@
+CompileFlags:
+  Add: [
+    -I/mnt/Documents/cpp_note/09-threadpool/threadpool/include/,
+    -I/mnt/Documents/cpp_note/09-threadpool/threadpool/tools/gtest/include/,
+]

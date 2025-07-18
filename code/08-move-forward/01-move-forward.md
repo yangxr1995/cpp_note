@@ -20,7 +20,6 @@
 3.常见示例
 匿名变量
 
-
 # 匿名变量
 匿名变量没有符号，所以生命周期为当前语句，当前语句结束，匿名变量析构
 ```cc
@@ -29,20 +28,28 @@ t1 = Test(1); // 1. 匿名变量构造 Test(int)
               // 2. operator=(const Test &)
               // 3. 匿名变量析构 ~Test()
 ```
+
 编译器会对匿名变量优化
 ```cc
 Test t1 = Test(1); // 优化为 Test t1(1);
 ```
+
 引用可以为匿名变量添加名称，让匿名变量变成普通变量，生命周期延长
 ```cc
 Test &t = Test(1); // 相当于 Test t(1);
 ```
+
 指针无法为匿名变量延长生命周期，所以容易导致野指针
 ```cc
 Test *pt = &Test(1); // 语句结束后匿名变量立即析构，导致指针悬挂
 ```
+
+
 ## 匿名变量和函数调用
-母函数和子函数的栈帧不同，导致双方的局部变量不能互相访问，但是当母函数有需要读取子函数返回值的需求。编译器通过在母函数栈帧上分配匿名变量，并传递匿名变量的地址给子函数，让子函数直接写匿名变量以返回值给母函数。
+母函数和子函数的栈帧不同，导致双方的局部变量不能互相访问，
+但是当母函数有需要读取子函数返回值的需求。
+编译器通过在母函数栈帧上分配匿名变量，并传递匿名变量的地址给子函数，
+让子函数直接写匿名变量以返回值给母函数。
 ```cc
 main() {
     Test t1;
@@ -56,19 +63,26 @@ main() {
    10c44:	mov	r0, r3
    10c48:	bl	10fc8 <Test::Test(int)>
      get_obj(t1);
+     // 概述下面汇编
+     // Test a = t1; // 在母函数栈帧构造子函数的形参a
+     // get_obj(panonymous, &a) // 母函数栈帧还要分配匿名变量空间
+                                // 将匿名变量传递子函数
    10c4c:	sub	r2, fp, #32 ; 获得实参t1地址
    10c50:	sub	r3, fp, #24 ; 获得形参a的地址
    10c54:	mov	r1, r2   ; 传递实参t1的地址
    10c58:	mov	r0, r3   ; 传递形参a的地址为this
    10c5c:	bl	11014 <Test::Test(Test const&)> ；构造形参a
+
    10c60:	sub	r3, fp, #20 ; 分配匿名变量的内存
    10c64:	sub	r2, fp, #24 ; 获得形参a的地址
    10c68:	mov	r1, r2      ; 传递参数a的地址
    10c6c:	mov	r0, r3      ; 传递匿名变量的地址
    10c70:	bl	10bd4 <get_obj(Test)>
+
    10c74:	sub	r3, fp, #20    ; 获得匿名变量地址
    10c78:	mov	r0, r3         ; 匿名变量地址做this
    10c7c:	bl	11060 <Test::~Test()> ; 匿名变量析构
+
    10c80:	sub	r3, fp, #24
    10c84:	mov	r0, r3
    10c88:	bl	11060 <Test::~Test()> ; 形参a的析构
@@ -86,6 +100,14 @@ Test get_obj(Test a)
    10be8:	ldr	r3, [fp, #-20]	; 从形参a获得val
    10bec:	ldr	r3, [r3]
    10bf0:	str	r3, [fp, #-8] ; 
+
+// 这里代码进行了优化
+// Test tmp(val); return tmp;
+// 优化为 
+// return Test(val);
+// 所以是返回匿名变量，
+// 匿名变量的空间实际是在母函数栈帧开辟
+
     Test tmp(val);
    10bf4:	ldr	r1, [fp, #-8] ; 传参a
    10bf8:	ldr	r0, [fp, #-16] ; 匿名变量做this指针
@@ -97,6 +119,7 @@ Test get_obj(Test a)
    10c08:	sub	sp, fp, #4
    10c0c:	pop	{fp, pc}
 ```
+
 当编译发现函数返回类对象时，就会在母函数开辟匿名变量，并将匿名变量的地址作为参数1传递，匿名变量作为返回值。
 ```cc
 Test get_obj(Test a);
@@ -115,29 +138,36 @@ String get_string(String &s)
 }
 s2 = get_string(s1); // 2. operator=(const String &)
 ```
-当使用匿名变量对s2进行赋值时，需要先删除s2原有的字符串空间，并创建新的空间然后拷贝匿名变量的字符串，最后匿名变量析构时会删除匿名变量的字符串空间。
+当使用匿名变量对s2进行赋值时，需要先删除s2原有的字符串空间，
+并创建新的空间然后拷贝匿名变量的字符串，最后匿名变量析构时会删除匿名变量的字符串空间。
+
 显然匿名变量的内部堆空间可以通过转交给s2，以节省上诉的冗余开销。
 但问题是赋值函数无法区分参数为普通变量和匿名变量。
-所以c++11提供了右值引用，以实现区分普通变量和匿名变量，因为匿名变量为右值，所以匿名变量的赋值方法的参数为右值引用，普通变量的赋值方法的参数为左值引用。
+
+所以c++11提供了右值引用，以实现区分普通变量和匿名变量，因为匿名变量为右值，
+所以匿名变量的赋值方法的参数为右值引用，普通变量的赋值方法的参数为左值引用。
+
 ```cc
 String operator=(String &&s);
 String operator=(const String &s);
 ```
+
 所以赋值方法可以实现为
 ```cc
 String & operator=(String &&s) {
-    delete [] _s;
-    _s = s._s;
+    delete [] _s;  // 释放自身原有空间
+    _s = s._s;     // 转移新空间的所有权
     s._s = nullptr;
     return *this;
 }
 String & operator=(const String &s) {
-    delete [] _s;
-    _s = new char [s.len() + 1]{0};
+    delete [] _s;   // 释放自身原有空间
+    _s = new char [s.len() + 1]{0}; // 拷贝新空间
     strcpy(_s, s._s);
     return *this;
 }
 ```
+
 同样拷贝构造函数可以改为
 ```cc
 String(String &&s) {
@@ -149,28 +179,34 @@ String(const String &s) {
     strcpy(_s, s._s);
 }
 ```
+
 ## 右值引用和常引用
 右值引用和常引用的汇编代码是一样的，只是编译角度有差别
 ```cc
 const String &s = String("111");
 String &&s = String("1111");
 ```
+
 常引用的目标只读，右值引用的目标可修改，
 常引用做函数参数时，无法区分左值做参数的调用和右值做参数的调用。
 但右值引用可以区分。
-右值引用只能引用右值，不能引用左值，但常用引用都可以。
+右值引用只能引用右值，不能引用左值，但常引用都可以。
 
 # 转移语义和完美转发
-默认情况，普通对象是左值，只有匿名对象是右值，有时我们知道某普通对象不再使用，则希望将他的堆空间转移给新的对象，但普通对象本身是左值，这时就需要用转移语义.
+默认情况，普通对象是左值，只有匿名对象是右值，
+有时我们知道某普通对象不再使用，则希望将他的堆空间转移给新的对象，但普通对象本身是左值，
+这时就需要用转移语义.
 ```cc
 String s1("1234");
 String s2 = std::move(s1); // String(String &&)
 // 以后s1不再使用，随栈析构
 ```
 move的原理是强制将对象由其左值类型转换为该对象的右值类型。
+
 ## std::move —— 容器模板和右值引用
 转移语义大量用在容器模板，
-比如String定义了右值引用的构造，但Vector中没有使用转移语义，会导致实际调用为String的左值引用拷贝构造.
+比如String定义了右值引用的构造，但Vector中没有使用转移语义，
+会导致实际调用为String的左值引用拷贝构造.
 ```cc
 template <typename T>
 struct Allocator {
@@ -193,6 +229,7 @@ Vector<String> v1;
 v1.push_back(String("111")); // String(const String &)
 v1.push_back(String("222")); // String(const String &)
 ```
+
 使用std::move将左值转为右值。
 ```cc
 template <typename T>
@@ -225,6 +262,7 @@ Vector<String> v1;
 v1.push_back(String("111")); // String(String &&)
 v1.push_back(String("222")); // String(String &&)
 ```
+
 ## std::forward 简化代码
 std::move虽然能实现调用右值引用的方法，但是模板需要同时实现左值和右值两个方法，且代码高度重复，
 使用std::forward可以简化代码。
@@ -240,9 +278,9 @@ struct Allocator {
 
 template <typename T, typename Alloca = Allocator<T>>
 class Vector {
-    template<typename Ty>
-    void push_back(Ty &&a) { // 引用折叠， Ty 为String && 时，定义 String && &&a -> String && a
-        if (full())          //            Ty 为String &时，  定义 String & &&a  -> String &  a
+    template<typename Ty>    // 同时能匹配左值引用和右值引用
+    void push_back(Ty &&a) { // 引用折叠， Ty 为String && 时，定义 String && &&a -> String && a (偶数&)
+        if (full())          //            Ty 为String &时，  定义 String & &&a  -> String &  a (奇数&)
             expand();
         _alloca.construct(_last, std::forward<Ty>(a));
         ++_last;
