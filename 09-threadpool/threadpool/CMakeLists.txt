@@ -6,6 +6,10 @@ option(BUILD_SAMPLES "Is build samples?" ON)
 option(BUILD_TESTS "Is build tests?" ON)
 option(gtest_build_samples "Is build gtest samples?" ON)
 
+# 设置 Debug 模式的默认编译选项
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0")
+
 # set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 FILE(GLOB SRCS ${CMAKE_CURRENT_LIST_DIR}/src/*.cc)
