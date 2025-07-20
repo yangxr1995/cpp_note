@@ -1,6 +1,8 @@
 ﻿#ifndef __THREAD_POOL_H__
 #define __THREAD_POOL_H__
 
+#include <cstdint>
+#include <list>
 #include <algorithm>
 #include <atomic>
 #include <cstddef>
@@ -167,6 +169,8 @@ class Task;
 class Result {
     public:
         Result(std::shared_ptr<Task> task, bool isVaild);
+        ~Result() {
+        }
 
         // 因为 Semaphore
         // 左值/右值的拷贝和赋值都被禁用
@@ -192,6 +196,10 @@ class Result {
             return isVaild_;
         }
 
+        void setVaild(bool isVaild) {
+            isVaild_ = isVaild;
+        }
+
     private:
         // 用于返回值获取者和设置者之间的同步
         Semaphore sem_;
@@ -212,7 +220,7 @@ enum class XCPP_API ThreadPoolMode {
 // 线程类型
 class XCPP_API Thread {
     public:
-        using ThreadFunc = std::function<void ()>;
+        using ThreadFunc = std::function<void (size_t)>;
 
         Thread(ThreadFunc func);
         ~Thread();
@@ -227,14 +235,25 @@ class XCPP_API Thread {
             th_->join();
         }
 
+        uint32_t getId() {
+            return id_;
+        }
+
+        static size_t allocNextId;
     private:
+
         ThreadFunc func_;
         std::unique_ptr<std::thread> th_;
+        size_t id_;
 };
 
 // 任务类型基类
 class XCPP_API Task {
     public:
+        Task() 
+        : id_(nextAllocId++)
+        {
+        }
         // 任务的工作内容，纯虚函数，用户派生实现具体工作内容
         // 返回任意值Any可以封装任意类型的数据
         virtual Any run() = 0;
@@ -246,6 +265,8 @@ class XCPP_API Task {
 
         // 相关的异步返回值
         std::weak_ptr<Result> result_;
+        static uint32_t nextAllocId;
+        uint32_t id_;
     private:
 };
 
@@ -253,48 +274,61 @@ class XCPP_API Task {
 // example :
 // class MyTask {
 //      public:
-//          void run() {}
+//          void run() {
+//              return Any(10);
+//          }
 // };
 //
 // ThreadPool tp;
 // tp.start();
-//
-// tp.submitTask(std::make_shared<MyTask>());
+// Result result = tp.submitTask(std::make_shared<MyTask>());
+// if (result.isVaild()) {
+//     result.get<int>();
+// }
 class XCPP_API ThreadPool {
     public:
         ThreadPool();
         ~ThreadPool();
-
-        void setMode(ThreadPoolMode mode); // 设置池工作模式
-
-        void start(size_t initThreadNumber = 4); // 启动池
-
-        void setTaskQueMaxNumber(size_t sz); // 设置任务队列最大任务数
-
-        // Result submitTask(std::shared_ptr<Task> sp); // 添加任务
-        std::shared_ptr<Result> submitTask(std::shared_ptr<Task> sp); // 添加任务
-
         ThreadPool(const ThreadPool &) = delete;
         ThreadPool& operator=(const ThreadPool &) = delete;
 
-    private:
-        void ThreadFunc(); // 所属线程的工作函数
+        size_t initThreadNumber() const { return initThreadNumber_; }
+        size_t maxThreadNumber() const { return maxThreadNumber_; }
+        size_t busyThreadNumber() const { return busyThreadNumber_; }
+        size_t currThreadNumber() const { return currThreadNumber_; }
+        size_t taskQueNumber() const { return taskQueNumber_; }
+        size_t taskQueMaxNumber() const { return taskQueMaxNumber_; }
+
+        void start(size_t initThreadNumber = 4); // 启动池
+        std::shared_ptr<Result> submitTask(std::shared_ptr<Task> sp); // 添加任务
+        void setMode(ThreadPoolMode mode); // 设置池工作模式
+        void setTaskQueMaxNumber(size_t sz); // 设置任务队列最大任务数
 
     private:
-        std::vector<std::unique_ptr<Thread>> threads_; // 支持动态增长线程组
+        void ThreadFunc(size_t id); // 所属线程的工作函数
+        void addThread();
+
+    private:
+        std::list<std::unique_ptr<Thread>> threads_; // 支持自动扩充和收缩的线程组
+        std::mutex threadsMtx_; // 线程链表的锁
         size_t initThreadNumber_; // 初始线程数量
         size_t maxThreadNumber_;  // 最大线程数量
+        std::atomic_uint busyThreadNumber_; // 繁忙的线程数量 
+        std::atomic_uint currThreadNumber_; // 当前总线程数量
 
         std::queue<std::shared_ptr<Task>> taskQue_; // 任务队列
-        std::atomic_uint taskQueNumber_; // 任务数量
-        size_t taskQueMaxNumber_; // 任务数量
         std::mutex taskQueMtx_;  // 任务队列锁
+        std::atomic_uint taskQueNumber_; // 当前任务数量
+        size_t taskQueMaxNumber_; // 最大任务数量
+
         std::condition_variable notFull_;  // 任务队列未满
         std::condition_variable notEmptyOrExit_; // 任务队列未空/退出工作
 
+        std::atomic_bool isExit_; // 用于通知所有线程的信号变量，线程是否退出
+
         ThreadPoolMode mode_; // 当前池的工作模式
 
-        std::atomic_bool isExit_; // 所有线程是否退出
+        bool isStart_; // 线程池是否启动，启动后不能设置配置
 };
 
 

@@ -1,6 +1,9 @@
 #include <chrono>
+#include <cstddef>
 #include <iostream>
+#include <iterator>
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <thread>
 #include "threadpool.h"
@@ -10,28 +13,49 @@ using namespace std;
 class MyTask : public Task {
 
     public:
+        MyTask(size_t id)
+        : id_(id) {
+
+        }
+
         Any run() override {
-            cout << "work..." << endl;
+            cout << id_ << " work..." << endl;
             this_thread::sleep_for(chrono::seconds(3));
-            cout << "work end" << endl;
+            cout << id_ << " work end" << endl;
             return Any(std::string("hello"));
         }
+    private:
+        size_t id_;
 };
 
 int main (int argc, char *argv[]) {
-        ThreadPool tp;
-        tp.start(10);
+    {
+        try {
+            ThreadPool tp;
+            tp.setMode(ThreadPoolMode::MODE_CACHED);
+            tp.start(10);
 
-        {
-            std::shared_ptr<Result> r = tp.submitTask(make_shared<MyTask>());
-            if (!r->isVaild()) {
-                cout << "Failed to submitTask" << endl;
+            this_thread::sleep_for(chrono::seconds(3));
+
+            for (size_t i = 0; i < 1000; ++i) {
+                tp.submitTask(std::make_shared<MyTask>(i));
             }
-            this_thread::sleep_for(chrono::seconds(1));
+
+            std::cout << "----- --------------wait -------------" << std::endl;
+            this_thread::sleep_for(chrono::seconds(30));
+
+            for (size_t i = 0; i < 1000; ++i) {
+                tp.submitTask(std::make_shared<MyTask>(i));
+            }
+
+            this_thread::sleep_for(chrono::seconds(30));
+        }
+        catch (runtime_error &e) {
+            cout << e.what() << endl;
         }
 
+    }
     cout << "-------" << endl;
-    // cout << "result : " << r->get<std::string>() << endl;
 
     return 0;
 }

@@ -21,5 +21,6 @@ find_package(GTest)
 
 add_test(any Any_unittest.cc)
 add_test(result Result_unittest.cc)
+add_test(threadpool_t ThreadPool_unittest.cc)
 
 add_custom_target(unit_test)
