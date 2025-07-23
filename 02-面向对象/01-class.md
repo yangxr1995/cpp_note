@@ -289,3 +289,70 @@ class stu {
 };
 ```
 
+
+# 继承
+## 函数重载，隐藏，重写，
+
+在 C++ 中，子类和基类的同名函数之间的关系
+### 1. 函数重载（Overloading）
+函数重载是指在同一个作用域内（这里不适用，因为基类和子类是不同的作用域）定义多个同名函数，但它们的参数列表不同（参数的类型、个数或顺序不同）。
+
+### 2. 函数隐藏（Hiding）和函数重写（Overriding）
+这两种情况需要根据基类中的函数是否为虚函数来区分：
+#### 2.1 函数隐藏（Hiding）
+当基类中的函数不是虚函数时，子类中定义的同名函数会隐藏基类的函数。这意味着，当通过子类对象调用时，默认会调用子类的函数；如果要调用基类的函数，需要使用作用域解析运算符::。
+以下是一个函数隐藏的示例代码：
+```cc
+#include <iostream>
+
+class Base {
+public:
+    void func() {
+        std::cout << "Base::func()" << std::endl;
+    }
+};
+
+class Derived : public Base {
+public:
+    void func() {
+        std::cout << "Derived::func()" << std::endl;
+    }
+};
+
+int main() {
+    Derived d;
+    d.func();           // 调用子类的func()
+    d.Base::func();     // 调用基类的func()
+    return 0;
+}
+```
+在上述代码中，Base类和Derived类都定义了func()函数，由于基类的func()不是虚函数，所以子类的func()隐藏了基类的func()。在main函数中，d.func()调用的是子类的func()，而d.Base::func()调用的是基类的func()。
+
+#### 2.2 函数重写（Overriding）
+当基类中的函数是虚函数（使用virtual关键字声明）时，子类中定义的同名同参数列表的函数会重写基类的函数。重写允许通过基类指针或引用调用子类的函数，实现多态性。
+以下是一个函数重写的示例代码：
+```cc
+#include <iostream>
+
+class Base {
+public:
+    virtual void func() {
+        std::cout << "Base::func()" << std::endl;
+    }
+};
+
+class Derived : public Base {
+public:
+    void func() override {
+        std::cout << "Derived::func()" << std::endl;
+    }
+};
+
+int main() {
+    Base* b = new Derived();
+    b->func();    // 调用子类的func()，实现多态
+    delete b;
+    return 0;
+}
+```
+在上述代码中，基类的func()函数使用virtual关键字声明为虚函数，子类的func()函数使用override关键字显式表明它重写了基类的虚函数。在main函数中，通过基类指针b指向子类对象，调用b->func()时，实际调用的是子类的func()函数，实现了多态性。

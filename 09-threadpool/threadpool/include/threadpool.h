@@ -299,7 +299,7 @@ class XCPP_API ThreadPool {
         size_t taskQueNumber() const { return taskQueNumber_; }
         size_t taskQueMaxNumber() const { return taskQueMaxNumber_; }
 
-        void start(size_t initThreadNumber = 4); // 启动池
+        void start(size_t initThreadNumber = std::thread::hardware_concurrency()); // 启动池
         std::shared_ptr<Result> submitTask(std::shared_ptr<Task> sp); // 添加任务
         void setMode(ThreadPoolMode mode); // 设置池工作模式
         void setTaskQueMaxNumber(size_t sz); // 设置任务队列最大任务数

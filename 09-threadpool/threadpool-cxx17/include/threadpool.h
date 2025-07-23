@@ -97,7 +97,7 @@ class ThreadPool {
         size_t taskQueNumber() const { return taskQueNumber_; }
         size_t taskQueMaxNumber() const { return taskQueMaxNumber_; }
 
-        void start(size_t initThreadNumber) { // 启动线程池
+        void start(size_t initThreadNumber = std::thread::hardware_concurrency()) { // 启动线程池
             if (isStart_)
                 return;
 
