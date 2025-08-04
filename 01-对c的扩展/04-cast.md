@@ -36,6 +36,84 @@ int * pInt2 = const_cast<int *>(&number);
 # dynamic_cast
 dynamic_cast：该运算符主要用于基类和派生类间的转换，尤其是向下转型的用法中
 
+dynamic_cast 是 C++ 的一种类型转换运算符，主要用于处理运行时类型识别（RTTI），在类的继承层次结构中进行安全的向下转换或跨转换。以下是其典型应用场景及示例：
+
+## 1. 安全的向下转换（基类指针 / 引用 → 派生类指针 / 引用）
+当你持有一个基类指针或引用，但需要访问派生类的特有成员时，dynamic_cast 会在运行时检查类型的有效性。若转换失败：
+指针类型返回 `nullptr`。
+引用类型抛出 `std::bad_cast` 异常。
+```cc
+#include <iostream>
+class Shape {
+public:
+    virtual ~Shape() = default; // 必须有虚函数，RTTI 才生效
+};
+
+class Circle : public Shape {
+public:
+    void drawCircle() { std::cout << "Drawing circle...\n"; }
+};
+
+class Square : public Shape {
+public:
+    void drawSquare() { std::cout << "Drawing square...\n"; }
+};
+
+void renderShape(Shape* shape) {
+    if (Circle* circle = dynamic_cast<Circle*>(shape)) {
+        circle->drawCircle(); // 安全转换为 Circle*
+    } else if (Square* square = dynamic_cast<Square*>(shape)) {
+        square->drawSquare(); // 安全转换为 Square*
+    } else {
+        std::cout << "Unknown shape type.\n";
+    }
+}
+
+int main() {
+    Circle circle;
+    Shape* shapePtr = &circle; // 基类指针指向派生类对象
+    renderShape(shapePtr);     // 输出: Drawing circle...
+}
+```
+
+## 2. 交叉转换（兄弟类之间的转换）
+当两个派生类继承自同一个基类，dynamic_cast 可以安全地将一个派生类指针 / 引用转换为另一个派生类的指针 / 引用。
+```cc
+class Shape { virtual ~Shape() {} };
+class Circle : public Shape { /* ... */ };
+class ColoredCircle : public Circle {
+public:
+    void setColor(int color) { std::cout << "Color set to " << color << "\n"; }
+};
+
+void processColoredCircle(Shape* shape) {
+    // 从基类指针转换到兄弟类指针
+    if (ColoredCircle* cc = dynamic_cast<ColoredCircle*>(shape)) {
+        cc->setColor(255);
+    }
+}
+```
+## 3. 引用类型的转换（处理异常）
+与指针不同，引用不能为 nullptr，因此转换失败时会抛出异常。
+```cc
+void printCircleArea(const Shape& shape) {
+    try {
+        const Circle& circle = dynamic_cast<const Circle&>(shape);
+        // 使用 circle 对象...
+    } catch (const std::bad_cast& e) {
+        std::cerr << "Error: Not a circle object.\n";
+    }
+}
+```
+
+## 注意事项
+- 虚函数必须存在：dynamic_cast 依赖于虚函数表（VTBL）实现 RTTI，因此基类必须有至少一个虚函数（通常是虚析构函数）。
+- 性能开销：运行时类型检查会带来额外开销，频繁使用可能影响性能。
+- 替代方案：优先考虑使用虚函数实现多态，仅在设计上确实需要类型转换时使用 dynamic_cast。
+
+## 总结
+dynamic_cast 的核心价值在于安全地突破静态类型系统的限制，但需谨慎使用，避免破坏面向对象设计的原则（如依赖倒置）。
+
 # reinterpret_cast
 reinterpret_cast：功能强大，慎用（也称为万能转换）
 该运算符可以用来处理无关类型之间的转换，即用在任意指针（或引用）类型之间的转

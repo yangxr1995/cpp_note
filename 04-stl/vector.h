@@ -8,46 +8,7 @@
 
 using namespace std;
 
-template <typename _Tp> 
-class Allocator : public std::__allocator_base<_Tp> {
-    public:
-
-        typedef _Tp        value_type;
-        typedef size_t     size_type;
-        typedef ptrdiff_t  difference_type;
-
-        typedef _Tp*       pointer;
-        typedef const _Tp* const_pointer;
-        typedef _Tp&       reference;
-        typedef const _Tp& const_reference;
-
-        template<typename _Tp1>
-            struct rebind {
-                typedef Allocator<_Tp1> other;
-            };
-
-        _Tp *allocate(size_type __n, const void* = static_cast<const void*>(0)) {
-            return (_Tp *)malloc(sizeof(_Tp) * __n);
-        }
-
-        void deallocate(_Tp* __p, size_type __n __attribute__ ((__unused__))) {
-            free(__p);
-        }
-
-        // template<typename Ty>
-        // void construct(_Tp *p, Ty &&val) {
-        //     new (p) _Tp(std::forward<Ty>(val));
-        // }
-
-        template<typename... Args>
-        void construct(_Tp *p, Args&&... args) {
-            new (p) _Tp(std::forward<Args>(args)...);
-        }
-
-        void destroy(_Tp *p) {
-            p->~_Tp();
-        }
-};
+#include "./allocator.h"
 
 template<typename T, typename Alloca = Allocator<T>>
 class vector {
@@ -152,6 +113,8 @@ public:
 		return (_last - _first);
 	}
 
+    // 迭代器实现有问题，无法兼容
+    // copy(v.begin(), v.end(), ostream_iterator(cout, " "));
 	class iterator {
 	public:
 		iterator(T *p)
@@ -214,22 +177,3 @@ private:
 	T *_end;     // 数组末尾后一个位置
 };
 
-int main()
-{
-    ::vector<string, Allocator<string>> v;
-
-	string s1("222");
-	v.push_back(s1); // vector::push_back(const T &val)
-	v.push_back(string("111")); // vector::push_back(T &&val)
-    v.push_back("3334");
-
-    // copy(v.begin(), v.end(), ostream_iterator<string>(cout, " "));
-    cout << "size : " << v.size() << endl;
-    for (const auto &val  : v) {
-        cout << "-- ";
-        cout << val << " ++" << endl;
-    }
-    cout << endl;
-
-	return 0;
-}
