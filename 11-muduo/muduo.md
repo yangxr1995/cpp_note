@@ -119,12 +119,14 @@ IO复用 + 线程池： 每个线程一个IO复用，并且IO都使用非阻塞I
 
 更好的设计；需要在上述基础上增加负载均衡，确保每个CPU能被充分有效利用。典型是　nginx，nginx是 fork + 多路复用，虽然内存消耗比 pthread + 多路复用高些，但是性能高于一般的 pthread + 多路复用服务器，因为 nginx 由高效的负载均衡系统，并且每个进程有独立的监听套接字，且使用乐观锁解决了惊群。而一般的 pthread + 多路复用 只有主线程有监听套接字，且没有负载均衡。
 
-## reacotr模型
+## reactor模型
+reactor模式是一种事件处理模式，用于处理由一个或多个输入并发传递给服务处理器的服务请求。随后，服务处理器对传入的请求进行多路分解，并将它们同步分派到相关的请求处理器。
+
 构成组件：
 - Event事件 : 封装事件相关属性，如fd，可读可写IO等。
-- Reacotr反应堆 : 作为事件循环的核心，负责监听多路 IO 事件（如 Socket 的可读、可写事件，连接请求等），并将事件分发到对应的处理器。
-- Demultiplex事件分发器 : 通常由操作系统提供的 IO 多路复用接口（如epoll）实现，负责阻塞等待事件发生，并将就绪事件通知 Reactor。
-- Eventhandler事件处理器 : 与特定事件绑定的处理逻辑，负责实际处理事件（如读取数据、发送响应、建立连接等）。
+- Reacotr反应堆 : 作为事件响应的核心，维护Event的管理，和Event和Eventhander映射。
+- Demultiplex 事件分发器 : 负责监听多路事件，并将就绪事件通知 Reactor。通常由操作系统提供的 IO 多路复用接口（如epoll）实现.
+- Eventhandler事件处理器 : 封装事件的处理，如读取数据、发送响应、建立连接等。
 
           ┌───────┐                     ┌─────────┐                     ┌─────────────┐               ┌──────────────┐
           │ Event │                     │ Reacotr │                     │ Demultiplex │               │ Eventhandler │
@@ -136,7 +138,7 @@ IO复用 + 线程池： 每个线程一个IO复用，并且IO都使用非阻塞I
               │                         │    │  管理Event集合│                 │                              │
               │                         └────────────────────┘                 │                              │
               │                              │                                 │                              │
-              │                              │  向Epoll add/mod/del Event      │                              │
+              │                              │  向Epoll add/mod/del event      │                              │
               │                              ├───────────────────────────────► │                              │
               │                              │                                 │                              │
               │                              │  启动反应堆                     │                              │
@@ -146,7 +148,7 @@ IO复用 + 线程池： 每个线程一个IO复用，并且IO都使用非阻塞I
               │                              │                       │         │    epoll_wait   │            │
               │                              │                       └───────────────────────────┘            │
               │                              │                                 │                              │
-              │                              │      返回发生的事件Event        │                              │
+              │                              │      返回发生的事件event        │                              │
               │                              │◄────────────────────────────────┤                              │
               │                              │                                 │                              │
               │                              │      调用Event对应的事件处理器  │                              │
@@ -239,6 +241,19 @@ muduo采用LT模式的原因:
 libevent和muduo的性能比较
 
 
+## muduo采用的reactor模型的好处
+- muduo的网络设计：reactors in threads – one loop per thread
+方案的特点是one loop per thread，有一个main reactor负载accept连接，然后把连接分发到某个sub reactor（采用round - robin的方式来选择sub reactor），该连接的所用操作都在那个sub reactor所处的线程中完成。多个连接可能被分派到多个线程中，以充分利用CPU。
+Reactor poll的大小是固定的，根据CPU的数目确定。
+```c
+// 设置EventLoop的线程个数，底层通过EventLoopThreadPool线程池管理线程类EventLoopThread
+_server.setThreadNum(10);
+```
+一个Base IO thread负责accept新的连接，接收到新的连接以后，使用轮询的方式在reactor pool中找到合适的sub reactor将这个连接挂载上去，这个连接上的所有任务都在这个sub reactor上完成。
+如果由过多的耗费CPU I/O的计算任务，可以提交到创建的ThreadPool线程池中专门处理耗时的计算任务。
+
+- reactors in process – one loop pre process
+Nginx服务器的网络模块设计，基于进程设计，采用多个Reactors充当I/O进程和工作进程，通过一把accept锁，完美解决多个Reactors的“惊群现象”。
 
 
 
