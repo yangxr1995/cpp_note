@@ -2634,3 +2634,82 @@ test()
 CMAKE_BUILD_TYPE : 指定编译类型, Debug Release RelWithDebInfo MinSizeRel
 PROJECT_NAME : project() 设置的项目名称
 
+
+## CMAKE_CURRENT_SOURCE_DIR 和 CMAKE_CURRENT_LIST_DIR
+
+| 变量 | 指向的目录 | 使用场景 |
+|------|------------|----------|
+| `CMAKE_CURRENT_SOURCE_DIR` | 当前**顶层** `CMakeLists.txt` 所在目录 | 通常用于引用项目源文件的主要路径 |
+| `CMAKE_CURRENT_LIST_DIR` | 当前**正在处理**的 CMake 文件所在目录 | 在模块或包含的脚本中引用与脚本相关的资源 |
+
+**简单记忆：** 当你在一个被 `include()` 引入的 `.cmake` 脚本中，需要引用与该脚本位于同一目录的文件时，应该使用 `CMAKE_CURRENT_LIST_DIR`。
+
+
+假设项目结构如下：
+```
+project/
+├── CMakeLists.txt          # 根目录的 CMakeLists
+├── src/
+│   ├── CMakeLists.txt
+│   └── main.cpp
+└── cmake/
+    └── MyHelper.cmake      # 一个自定义的 CMake 脚本
+```
+
+
+```cmake
+# filepath: project/CMakeLists.txt
+# 输出结果：
+# CURRENT_SOURCE_DIR: /path/to/project
+# CURRENT_LIST_DIR: /path/to/project
+message("CURRENT_SOURCE_DIR: ${CMAKE_CURRENT_SOURCE_DIR}")
+message("CURRENT_LIST_DIR: ${CMAKE_CURRENT_LIST_DIR}")
+
+# 包含子目录
+# filepath: project/src/CMakeLists.txt
+# message("In src/ - CURRENT_SOURCE_DIR: ${CMAKE_CURRENT_SOURCE_DIR}")
+# message("In src/ - CURRENT_LIST_DIR: ${CMAKE_CURRENT_LIST_DIR}")
+# 输出结果：
+# In src/ - CURRENT_SOURCE_DIR: /path/to/project/src
+# In src/ - CURRENT_LIST_DIR: /path/to/project/src
+add_subdirectory(src)
+
+# 包含辅助脚本
+# filepath: project/cmake/MyHelper.cmake
+# message("In MyHelper.cmake - CURRENT_SOURCE_DIR: ${CMAKE_CURRENT_SOURCE_DIR}")
+# message("In MyHelper.cmake - CURRENT_LIST_DIR: ${CMAKE_CURRENT_LIST_DIR}")
+# 输出结果：
+# In MyHelper.cmake - CURRENT_SOURCE_DIR: /path/to/project    # 指向根 CMakeLists.txt 的目录
+# In MyHelper.cmake - CURRENT_LIST_DIR: /path/to/project/cmake  # 指向当前脚本自己的目录
+include(cmake/MyHelper.cmake)
+```
+
+## add_dependencies
+`add_dependencies` 是 CMake 中的一个命令，用于**显式地指定目标之间的依赖关系**。它的主要作用是确保在构建某个目标之前，它所依赖的其他目标已经被构建完成。
+
+```cmake
+# 创建两个自定义目标
+add_custom_target(TargetA
+    COMMAND echo "Building TargetA"
+)
+
+add_custom_target(TargetB
+    COMMAND echo "Building TargetB"
+)
+
+# 指定 TargetB 依赖于 TargetA
+add_dependencies(TargetB TargetA)
+
+# 对于可执行文件和库的依赖
+add_executable(my_app main.cpp)
+add_library(my_lib lib.cpp)
+
+# 确保在构建 my_app 之前先构建 my_lib
+add_dependencies(my_app my_lib)
+```
+
+注意事项
+- 对于通过 `add_library()` 或 `add_executable()` 创建的目标，如果它们之间有源代码级别的依赖（如 `target_link_libraries`），CMake 通常能自动推断构建顺序，此时 `add_dependencies` 可能不是必需的
+- 主要用于处理 CMake 无法自动推断的依赖关系，特别是涉及自定义目标的情况
+
+

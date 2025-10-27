@@ -95,7 +95,7 @@
 通过指定模板参数可以创建同步和异步日志。
 如下面示例
 ```cc
-// 创建多线程同步日志
+// 创建单线程同步日志
 std::shared_ptr<spdlog::logger> slogger_st = spdlog::stdout_color_st<spdlog::synchronous_factory>("thread unsafe, sync logger");
 slogger_st->info("hello");
 
