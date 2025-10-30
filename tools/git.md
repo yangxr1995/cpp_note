@@ -466,3 +466,7 @@ Closes #789
 复杂多行推荐用编辑器编写（git commit 无参数方式）
 无论哪种方式，都建议遵循「标题 + 空行 + 详细描述」的结构，保持提交历史清晰。
 
+## git diff
+- git diff（不加参数）：显示工作区与暂存区的差异
+- git diff --cached：显示暂存区与HEAD的差异
+- git diff HEAD：显示工作区与HEAD的差异（包括未暂存的变更）
