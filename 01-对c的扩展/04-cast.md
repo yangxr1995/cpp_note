@@ -115,9 +115,7 @@ void printCircleArea(const Shape& shape) {
 dynamic_cast 的核心价值在于安全地突破静态类型系统的限制，但需谨慎使用，避免破坏面向对象设计的原则（如依赖倒置）。
 
 # reinterpret_cast
-reinterpret_cast：功能强大，慎用（也称为万能转换）
-该运算符可以用来处理无关类型之间的转换，即用在任意指针（或引用）类型之间的转
-换，以及指针与足够大的整数类型之间的转换。由此可以看出，reinterpret_cast的效果很
-强大，但错误的使用reinterpret_cast很容易导致程序的不安全，只有将转换后的类型值转
-换回到其原始类型，这样才是正确使用reinterpret_cast方式。
+reinterpret_cast：功能强大，慎用（也称为万能转换）.
+该运算符可以用来处理无关类型之间的转换，即用在任意指针（或引用）类型之间的转换，以及指针与足够大的整数类型之间的转换。
+由此可以看出，reinterpret_cast的效果很强大，但错误的使用reinterpret_cast很容易导致程序的不安全，只有将转换后的类型值转换回到其原始类型，这样才是正确使用reinterpret_cast方式。
 

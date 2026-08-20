@@ -1,41 +1,42 @@
-//  Weather update client
-//  Connects SUB socket to tcp://localhost:5556
-//  Collects weather updates and finds avg temp in zipcode
+#include "zmq.h"
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <zhelpers.h>
 
-#include "zhelpers.h"
-//编译：gcc -o wuclient wuclient.c -lzmq
-int main (int argc, char *argv [])
+int main(int argc, char *argv[])
 {
-    //  Socket to talk to server
-    printf ("Collecting updates from weather server...\n");
-    void *context = zmq_ctx_new ();
-    void *subscriber = zmq_socket (context, ZMQ_SUB);
-    int rc = zmq_connect (subscriber, "tcp://localhost:5556");
-    assert (rc == 0);
+    void *zmq_ctx = zmq_ctx_new();
 
-    //  Subscribe to zipcode, default is NYC, 10001
-    const char *filter = (argc > 1)? argv [1]: "10001 ";
-    rc = zmq_setsockopt (subscriber, ZMQ_SUBSCRIBE,
-                         filter, strlen (filter));  // 字符匹配的方式
-    assert (rc == 0);
+    printf("Collecting updates from weather server...\n");
+    void *zmq_suber = zmq_socket(zmq_ctx, ZMQ_SUB);
+    int rc = zmq_connect(zmq_suber, "tcp://localhost:5556");
+    assert(rc == 0);
 
-    //  Process 100 updates
-    int update_nbr;
+    // 只接受 msg 首部字节为 "10001" (不包含\0) 的消息
+    char *filter = (argc > 1) ? argv[1] : "10001";
+    rc = zmq_setsockopt(zmq_suber, ZMQ_SUBSCRIBE, filter, strlen(filter));
+    assert(rc == 0);
+
+    int update_nb;
     long total_temp = 0;
-    for (update_nbr = 0; update_nbr < 100; update_nbr++) {
-        char *string = s_recv (subscriber);
-
+    for (update_nb = 0; update_nb < 100; update_nb++) {
+        char *string = s_recv(zmq_suber);
         int zipcode, temperature, relhumidity;
-        sscanf (string, "%d %d %d",
-            &zipcode, &temperature, &relhumidity);
+        sscanf(string, "%d %d %d",
+                &zipcode, &temperature, &relhumidity);
         total_temp += temperature;
-        printf("zipcode = %d\n", zipcode);
-        free (string);
+        free(string);
+        printf("zipcode[%d] temperature[%d] relhumidity[%d]\n",
+                zipcode, temperature, relhumidity);
     }
-    printf ("Average temperature for zipcode '%s' was %dF\n",
-        filter, (int) (total_temp / update_nbr));
 
-    zmq_close (subscriber);
-    zmq_ctx_destroy (context);
+    printf("Avaerage temperature for zipcode '%s' was %dF\n",
+            filter, (int)(total_temp / update_nb));
+
+    zmq_close(zmq_suber);
+    zmq_ctx_destroy(zmq_ctx);
+    
     return 0;
 }

@@ -1,47 +1,82 @@
-//  Task ventilator
-//  Binds PUSH socket to tcp://localhost:5557
-//  Sends batch of tasks to workers via that socket
+//
+//                         ┌───────┐
+//                         │ 发生器│
+//                         ├───────┤
+//                         │ PUSH  │
+//                         └───────┘
+//                           任务
+//                            │
+//              ┌─────────────┼──────────────┐
+//              │             │              │
+//              ▼ 任务        ▼ 任务         ▼ 任务 
+//          ┌──────┐       ┌──────┐       ┌──────┐
+//          │ PULL │       │ PULL │       │ PULL │
+//          ├──────┤       ├──────┤       ├──────┤
+//          │ 工人 │       │ 工人 │       │ 工人 │
+//          ├──────┤       ├──────┤       ├──────┤
+//          │ PUSH │       │ PUSH │       │ PUSH │
+//          └───┬──┘       └──┬───┘       └──┬───┘
+//              │ 结果        │ 结果         │ 结果
+//              └─────────────┼──────────────┘
+//                            │
+//                            ▼
+//                         ┌───────┐
+//                         │ PULL  │
+//                         ├───────┤
+//                         │ 接收器│
+//                         └───────┘
+//
+// 实际上是 PUSH 做server ， PULL 发起连接
+// 任务发生器
+#include "zmq.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <unistd.h>
+#include <zhelpers.h>
 
-#include "zhelpers.h"
-
-int main (void) 
+int main(int argc, char *argv[])
 {
-    void *context = zmq_ctx_new ();
+    void *zmq_ctx = zmq_ctx_new();
+    void *sender = zmq_socket(zmq_ctx, ZMQ_PUSH);
+    zmq_bind(sender, "tcp://*:5557");
 
-    //  Socket to send messages on
-    void *sender = zmq_socket (context, ZMQ_PUSH);
-    zmq_bind (sender, "tcp://*:5557");
+    void *sink = zmq_socket(zmq_ctx, ZMQ_PUSH);
+    zmq_connect(sink, "tcp://localhost:5558");
+    printf("Press Enter when the workers are ready:");
+    getchar();
 
-    //  Socket to send start of batch message on
-    void *sink = zmq_socket (context, ZMQ_PUSH);
-    zmq_connect (sink, "tcp://localhost:5558");
+    printf("Sending tasks to workers...\n");
+    s_send(sink, "0"); // 任务开始
+    zmq_close(sink);
+    printf("Create tasks to workers...\n");
 
-    printf ("Press Enter when the workers are ready: ");
-    getchar ();
-    printf ("Sending tasks to workers...\n");
+    srandom((unsigned)time(NULL));
 
-    //  The first message is "0" and signals start of batch
-    s_send (sink, "0");
-
-    //  Initialize random number generator
-    srandom ((unsigned) time (NULL));
-
-    //  Send 100 tasks
-    int task_nbr;
-    int total_msec = 0;     //  Total expected cost in msecs
-    for (task_nbr = 0; task_nbr < 100; task_nbr++) {
+    int task_nb;
+    int total_msec = 0;
+    printf("\n");
+    for (task_nb = 0; task_nb < 1000; task_nb++) {
         int workload;
-        //  Random workload from 1 to 100msecs
-        workload = randof (100) + 1;
+        // 随机工作负荷
+        workload = randof(100) + 1;
         total_msec += workload;
-        char string [10];
-        sprintf (string, "%d", workload);
-        s_send (sender, string);    // 用户层没有关注pull
+        char string[10];
+        sprintf(string, "%d", workload);
+        printf("s");
+        fflush(stdout);
+        s_send(sender, string);
+        printf(".");
+        fflush(stdout);
     }
-    printf ("Total expected cost: %d msec\n", total_msec);
+    printf("\n");
+    printf("Total expected cost : %d msec\n", total_msec);
+    sleep(1);
 
-    zmq_close (sink);
-    zmq_close (sender);
-    zmq_ctx_destroy (context);
+    zmq_close(sender);
+    zmq_ctx_destroy(zmq_ctx);
+
     return 0;
 }
+
+

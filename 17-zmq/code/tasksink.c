@@ -1,39 +1,39 @@
-//  Task sink
-//  Binds PULL socket to tcp://localhost:5558
-//  Collects results from workers via that socket
+// 任务接收器
+#include "zmq.h"
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <zhelpers.h>
 
-#include "zhelpers.h"
-
-int main (void) 
+int main(int argc, char *argv[])
 {
-    //  Prepare our context and socket
-    void *context = zmq_ctx_new ();
-    void *receiver = zmq_socket (context, ZMQ_PULL);
-    zmq_bind (receiver, "tcp://*:5558");
+    void *zmq_ctx = zmq_ctx_new();
+    void *receiver = zmq_socket(zmq_ctx, ZMQ_PULL);
+    zmq_bind(receiver, "tcp://*:5558");
 
-    //  Wait for start of batch
-    char *string = s_recv (receiver);
-    free (string);
+    char *string = s_recv(receiver);
+    free(string);
 
-    //  Start our clock now
-    int64_t start_time = s_clock ();
+    int64_t start_time = s_clock();
 
-    //  Process 100 confirmations
-    int task_nbr;
-    for (task_nbr = 0; task_nbr < 100; task_nbr++) {
-        char *string = s_recv (receiver);
-        free (string);
-        if (task_nbr % 10 == 0)
-            printf (":");
-        else
-            printf (".");
-        fflush (stdout);
+    int task_nb;
+    for (task_nb = 0; task_nb < 100; task_nb++) {
+        char *string = s_recv(receiver);
+        free(string);
+        if ((task_nb / 10) * 10 == task_nb) {
+            printf(":");
+        }
+        else {
+            printf(".");
+        }
+        fflush(stdout);
     }
-    //  Calculate and report duration of batch
-    printf ("Total elapsed time: %d msec\n", 
-        (int) (s_clock () - start_time));
+    printf("Total elapsed time: %d msec\n",
+            (int)(s_clock() - start_time));
+    fflush(stdout);
 
-    zmq_close (receiver);
-    zmq_ctx_destroy (context);
+    zmq_close(receiver);
+    zmq_ctx_destroy(zmq_ctx);
+
     return 0;
 }

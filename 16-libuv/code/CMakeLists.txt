@@ -44,18 +44,18 @@ function(add_test name srcs)
     target_link_libraries(test uv)
 endfunction()
 
-add_executable(EvaCli EvaCli.cc)
-target_include_directories(EvaCli
+add_executable(cli cli.cc)
+target_include_directories(cli
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_directories(EvaCli
+target_link_directories(cli
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/lib)
-target_link_libraries(EvaCli uv)
+target_link_libraries(cli uv)
 
-add_executable(EvaSrv EvaSrv.cc)
-target_include_directories(EvaSrv
+add_executable(srv srv.cc)
+target_include_directories(srv
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_directories(EvaSrv
+target_link_directories(srv
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/lib)
-target_link_libraries(EvaSrv uv)
+target_link_libraries(srv uv)
 
 

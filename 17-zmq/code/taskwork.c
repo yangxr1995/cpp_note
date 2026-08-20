@@ -1,33 +1,37 @@
-//  Task worker
-//  Connects PULL socket to tcp://localhost:5557
-//  Collects workloads from ventilator via that socket
-//  Connects PUSH socket to tcp://localhost:5558
-//  Sends results to sink via that socket
+// 并行任务工人
 
-#include "zhelpers.h"
+#include "zmq.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <zhelpers.h>
 
-int main (void) 
+int main(int argc, char *argv[])
 {
-    //  Socket to receive messages on
-    void *context = zmq_ctx_new ();
-    void *receiver = zmq_socket (context, ZMQ_PULL);
-    zmq_connect (receiver, "tcp://localhost:5557");
+    void *zmq_ctx = zmq_ctx_new();
 
-    //  Socket to send messages to
-    void *sender = zmq_socket (context, ZMQ_PUSH);
-    zmq_connect (sender, "tcp://localhost:5558");
+    // 用于接受任务
+    void *receiver = zmq_socket(zmq_ctx, ZMQ_PULL);
+    zmq_connect(receiver, "tcp://localhost:5557");
 
-    //  Process tasks forever
+    // 用于发送结果
+    void *sender = zmq_socket(zmq_ctx, ZMQ_PUSH);
+    zmq_connect(sender, "tcp://localhost:5558");
+
     while (1) {
-        char *string = s_recv (receiver);
-        printf ("%s.", string);     //  Show progress
-        fflush (stdout);
-        s_sleep (atoi (string));    //  Do the work
-        free (string);
-        s_send (sender, "");        //  Send results to sink
+        char *string = s_recv(receiver);
+        fflush(stdout);
+        printf("%s.", string);
+
+        s_sleep(atoi(string));
+        free(string);
+
+        // 发送给接收器
+        s_send(sender, "");
     }
-    zmq_close (receiver);
-    zmq_close (sender);
-    zmq_ctx_destroy (context);
+
+    zmq_close(receiver);
+    zmq_close(sender);
+    zmq_ctx_destroy(zmq_ctx);
     return 0;
 }
+

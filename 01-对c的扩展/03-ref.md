@@ -31,10 +31,10 @@ mov r2, #10
 - 语法简化：无需显式解引用（`a=30` vs `*p=30`），支持操作符重载的自然表达
 
 2. 现代C++中的引用演进
-右值引用（C++11）：通过 `&&` 实现移动语义，允许高效资源转移（如 `std::move`）
-`std::string&& rref = std::move(s); // 避免深拷贝`
-转发引用（万能引用）：配合模板实现完美转发（`template<typename T> void f(T&&)`）
-string_view（C++17）：提供非拥有式字符串视图，比 `const string&` 更灵活高效
+- 右值引用（C++11）：通过 `&&` 实现移动语义，允许高效资源转移（如 `std::move`）
+  - `std::string&& rref = std::move(s); // 避免深拷贝`
+- 转发引用（万能引用）：配合模板实现完美转发（`template<typename T> void f(T&&)`）
+- string_view（C++17）：提供非拥有式字符串视图，比 `const string&` 更灵活高效
 
 # 引用使用场景与最佳实践
 1. 适用场景
