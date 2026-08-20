@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="armv7-call-abi" viewBox="0 0 1200 1090" role="img" aria-labelledby="armv7-title armv7-desc">
+  <style><![CDATA[
+#armv7-call-abi {
+      --foreground: #172033;
+      --muted-foreground: #536176;
+      --border: #d7deea;
+      --surface: #f7f9fc;
+      --surface-strong: #eaf0fa;
+      --blue: #2f6fed;
+      --blue-soft: #e8f0ff;
+      --green: #15803d;
+      --green-soft: #e8f7ed;
+      --orange: #b45309;
+      --orange-soft: #fff3df;
+      --red: #b42318;
+      --red-soft: #fff0ee;
+      color: var(--foreground);
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    #armv7-call-abi .armv7-title {
+      margin: 0 0 4px;
+      font-size: 20px;
+      font-weight: 500;
+    }
+    #armv7-call-abi .armv7-caption {
+      margin: 0 0 12px;
+      color: var(--muted-foreground);
+    }
+    #armv7-call-abi svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    #armv7-call-abi .panel {
+      fill: var(--surface);
+      stroke: var(--border);
+      stroke-width: 1.5;
+    }
+    #armv7-call-abi .panel-blue {
+      fill: var(--blue-soft);
+      stroke: var(--blue);
+      stroke-width: 1.5;
+    }
+    #armv7-call-abi .panel-green {
+      fill: var(--green-soft);
+      stroke: var(--green);
+      stroke-width: 1.5;
+    }
+    #armv7-call-abi .panel-orange {
+      fill: var(--orange-soft);
+      stroke: var(--orange);
+      stroke-width: 1.5;
+    }
+    #armv7-call-abi .panel-red {
+      fill: var(--red-soft);
+      stroke: var(--red);
+      stroke-width: 1.5;
+    }
+    #armv7-call-abi .section-title {
+      fill: var(--foreground);
+      font-size: 16px;
+      font-weight: 500;
+    }
+    #armv7-call-abi .label {
+      fill: var(--foreground);
+      font-size: 13px;
+    }
+    #armv7-call-abi .small {
+      fill: var(--muted-foreground);
+      font-size: 11px;
+    }
+    #armv7-call-abi .mono {
+      fill: var(--foreground);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+    }
+    #armv7-call-abi .mono-small {
+      fill: var(--foreground);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 11px;
+    }
+    #armv7-call-abi .blue-text { fill: var(--blue); }
+    #armv7-call-abi .green-text { fill: var(--green); }
+    #armv7-call-abi .orange-text { fill: var(--orange); }
+    #armv7-call-abi .red-text { fill: var(--red); }
+    #armv7-call-abi .line {
+      stroke: var(--border);
+      stroke-width: 1.5;
+    }
+    #armv7-call-abi .arrow-blue {
+      stroke: var(--blue);
+      stroke-width: 2.5;
+      fill: none;
+      marker-end: url(#arrow-blue);
+    }
+    #armv7-call-abi .arrow-green {
+      stroke: var(--green);
+      stroke-width: 2.5;
+      fill: none;
+      marker-end: url(#arrow-green);
+    }
+    #armv7-call-abi .arrow-orange {
+      stroke: var(--orange);
+      stroke-width: 2.5;
+      fill: none;
+      marker-end: url(#arrow-orange);
+    }
+    #armv7-call-abi .dashed {
+      stroke-dasharray: 6 5;
+    }
+    #armv7-call-abi .memory {
+      fill: var(--surface);
+      stroke: var(--foreground);
+      stroke-width: 1.2;
+    }
+    #armv7-call-abi .memory-saved {
+      fill: var(--orange-soft);
+      stroke: var(--orange);
+      stroke-width: 1.2;
+    }
+    #armv7-call-abi .memory-param {
+      fill: var(--blue-soft);
+      stroke: var(--blue);
+      stroke-width: 1.2;
+    }
+    #armv7-call-abi .memory-local {
+      fill: var(--green-soft);
+      stroke: var(--green);
+      stroke-width: 1.2;
+    }
+    #armv7-call-abi .badge {
+      fill: var(--surface-strong);
+      stroke: var(--border);
+      stroke-width: 1;
+    }
+  ]]></style>
+    <title id="armv7-title">ARMv7 AAPCS32 未优化函数调用过程</title>
+    <desc id="armv7-desc">图示调用者把 a 和 b 放入 r0、r1，通过 bl 保存返回地址；被调用函数保存 fp 和 lr，建立栈帧，把 r0、r1 保存为形参 a、b，读取形参计算，并把返回值放入 r0，最后恢复栈帧返回。</desc>
+
+    <defs>
+      <marker id="arrow-blue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#2f6fed"></path>
+      </marker>
+      <marker id="arrow-green" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#15803d"></path>
+      </marker>
+      <marker id="arrow-orange" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#b45309"></path>
+      </marker>
+    </defs>
+
+    <rect x="20" y="12" width="1160" height="72" rx="12" class="panel-blue"></rect>
+    <text x="42" y="38" class="section-title">前提</text>
+    <text x="42" y="61" class="label">ARMv7 AAPCS32 · 整数参数优先使用 r0–r3 · int 返回值使用 r0 · 栈通常向低地址增长</text>
+    <rect x="830" y="27" width="320" height="36" rx="18" class="badge"></rect>
+    <text x="990" y="50" text-anchor="middle" class="small">典型 ABI 实现 ≠ C++ 语言保证</text>
+
+    <text x="32" y="116" class="section-title">一、调用时序：从实参到返回值</text>
+
+    <rect x="25" y="135" width="210" height="230" rx="12" class="panel"></rect>
+    <circle cx="52" cy="163" r="16" fill="#2f6fed"></circle>
+    <text x="52" y="168" text-anchor="middle" fill="#ffffff" font-size="12">1</text>
+    <text x="78" y="168" class="section-title">调用者准备实参</text>
+    <text x="45" y="200" class="mono">ldr r1, [fp_main, #-12]</text>
+    <text x="45" y="222" class="mono">ldr r0, [fp_main, #-16]</text>
+    <text x="45" y="255" class="label">r0 ← a = 10</text>
+    <text x="45" y="278" class="label">r1 ← b = 20</text>
+    <text x="45" y="315" class="small">按值参数此时还在</text>
+    <text x="45" y="333" class="small">调用约定规定的位置；</text>
+    <text x="45" y="351" class="small">不代表已经压入栈。</text>
+
+    <path d="M 235 250 H 270" class="arrow-blue"></path>
+
+    <rect x="275" y="135" width="210" height="230" rx="12" class="panel-blue"></rect>
+    <circle cx="302" cy="163" r="16" fill="#2f6fed"></circle>
+    <text x="302" y="168" text-anchor="middle" fill="#ffffff" font-size="12">2</text>
+    <text x="328" y="168" class="section-title">执行 bl</text>
+    <text x="295" y="207" class="mono">bl sum</text>
+    <text x="295" y="245" class="label">PC → sum</text>
+    <text x="295" y="270" class="label">LR ← 下一条指令地址</text>
+    <text x="295" y="315" class="small">LR 是链接寄存器；</text>
+    <text x="295" y="333" class="small">若 callee 还要调用别人，</text>
+    <text x="295" y="351" class="small">通常先把 LR 保存到栈。</text>
+
+    <path d="M 485 250 H 520" class="arrow-orange"></path>
+
+    <rect x="525" y="135" width="210" height="230" rx="12" class="panel-orange"></rect>
+    <circle cx="552" cy="163" r="16" fill="#b45309"></circle>
+    <text x="552" y="168" text-anchor="middle" fill="#ffffff" font-size="12">3</text>
+    <text x="578" y="168" class="section-title">建立栈帧</text>
+    <text x="545" y="202" class="mono">push {fp, lr}</text>
+    <text x="545" y="224" class="mono">add  fp, sp, #4</text>
+    <text x="545" y="246" class="mono">sub  sp, sp, #N</text>
+    <text x="545" y="285" class="label">保存旧 fp / 返回地址</text>
+    <text x="545" y="315" class="small">fp 稳定地定位当前帧；</text>
+    <text x="545" y="333" class="small">sp 为局部变量留空间。</text>
+
+    <path d="M 735 250 H 770" class="arrow-green"></path>
+
+    <rect x="775" y="135" width="210" height="230" rx="12" class="panel-green"></rect>
+    <circle cx="802" cy="163" r="16" fill="#15803d"></circle>
+    <text x="802" y="168" text-anchor="middle" fill="#ffffff" font-size="12">4</text>
+    <text x="828" y="168" class="section-title">保存并读取形参</text>
+    <text x="795" y="202" class="mono">str r0, [fp, #-8]</text>
+    <text x="795" y="224" class="mono">str r1, [fp, #-12]</text>
+    <text x="795" y="263" class="mono">ldr r2, [fp, #-8]</text>
+    <text x="795" y="285" class="mono">ldr r3, [fp, #-12]</text>
+    <text x="795" y="327" class="small">-O0 常把寄存器值落到</text>
+    <text x="795" y="345" class="small">栈槽，便于调试和访问。</text>
+
+    <path d="M 985 250 H 1020" class="arrow-green"></path>
+
+    <rect x="1025" y="135" width="150" height="230" rx="12" class="panel-green"></rect>
+    <circle cx="1052" cy="163" r="16" fill="#15803d"></circle>
+    <text x="1052" y="168" text-anchor="middle" fill="#ffffff" font-size="12">5</text>
+    <text x="1078" y="168" class="section-title">返回</text>
+    <text x="1045" y="207" class="mono">add r0, r2, r3</text>
+    <text x="1045" y="245" class="label">r0 ← 30</text>
+    <text x="1045" y="280" class="mono-small">sub sp, fp, #4</text>
+    <text x="1045" y="300" class="mono-small">pop {fp, pc}</text>
+    <text x="1045" y="338" class="small">pc 恢复为 LR</text>
+
+    <text x="32" y="410" class="section-title">二、栈布局：调用前、callee 建栈后、返回后</text>
+
+    <rect x="25" y="430" width="340" height="385" rx="12" class="panel"></rect>
+    <text x="45" y="460" class="section-title">调用前：main 中的状态</text>
+    <text x="45" y="483" class="small">参数优先在寄存器中传递，未必压栈</text>
+
+    <rect x="75" y="510" width="215" height="46" class="memory"></rect>
+    <text x="182" y="538" text-anchor="middle" class="label">main 的局部变量：a = 10</text>
+    <rect x="75" y="556" width="215" height="46" class="memory"></rect>
+    <text x="182" y="584" text-anchor="middle" class="label">main 的局部变量：b = 20</text>
+    <path d="M 315 510 V 602" class="arrow-blue"></path>
+    <text x="327" y="565" class="small">栈向低地址增长</text>
+
+    <rect x="75" y="640" width="215" height="46" class="memory-param"></rect>
+    <text x="182" y="668" text-anchor="middle" class="label">r0 = a = 10</text>
+    <rect x="75" y="686" width="215" height="46" class="memory-param"></rect>
+    <text x="182" y="714" text-anchor="middle" class="label">r1 = b = 20</text>
+    <text x="45" y="772" class="small">这里的 r0/r1 是寄存器状态，</text>
+    <text x="45" y="790" class="small">不是 main 栈上的两个新形参。</text>
+
+    <rect x="390" y="430" width="390" height="385" rx="12" class="panel-orange"></rect>
+    <text x="410" y="460" class="section-title">callee sum：prologue 后的典型栈帧</text>
+    <text x="410" y="483" class="small">假设 fp = sp + 4；偏移仅作教学示例</text>
+
+    <text x="410" y="520" class="small">高地址 ↑</text>
+    <rect x="485" y="535" width="235" height="48" class="memory-saved"></rect>
+    <text x="602" y="558" text-anchor="middle" class="label">[fp, #0] 保存的 LR</text>
+    <rect x="485" y="583" width="235" height="48" class="memory-saved"></rect>
+    <text x="602" y="606" text-anchor="middle" class="label">[fp, #-4] 旧 FP</text>
+    <rect x="485" y="631" width="235" height="48" class="memory-param"></rect>
+    <text x="602" y="654" text-anchor="middle" class="label">[fp, #-8] 形参 a ← r0</text>
+    <rect x="485" y="679" width="235" height="48" class="memory-param"></rect>
+    <text x="602" y="702" text-anchor="middle" class="label">[fp, #-12] 形参 b ← r1</text>
+    <rect x="485" y="727" width="235" height="48" class="memory-local"></rect>
+    <text x="602" y="750" text-anchor="middle" class="label">[fp, #-16] 局部变量 temp</text>
+    <text x="410" y="801" class="small">低地址 ↓</text>
+    <path d="M 455 535 V 775" class="arrow-orange"></path>
+    <text x="425" y="665" transform="rotate(-90 425 665)" class="small">sub sp, sp, #N 后的局部空间</text>
+
+    <rect x="805" y="430" width="370" height="385" rx="12" class="panel-green"></rect>
+    <text x="825" y="460" class="section-title">返回路径：结果回到调用者</text>
+    <text x="825" y="493" class="mono">ldr r2, [fp, #-8]</text>
+    <text x="825" y="515" class="mono">ldr r3, [fp, #-12]</text>
+    <text x="825" y="537" class="mono">add r0, r2, r3</text>
+    <text x="825" y="559" class="label green-text">r0 = 10 + 20 = 30</text>
+    <path d="M 1000 575 V 625" class="arrow-green"></path>
+    <rect x="860" y="635" width="255" height="48" class="memory-local"></rect>
+    <text x="987" y="664" text-anchor="middle" class="label">pop {fp, pc}：恢复并返回</text>
+    <path d="M 987 685 V 735" class="arrow-green"></path>
+    <rect x="860" y="745" width="255" height="48" class="memory-param"></rect>
+    <text x="987" y="774" text-anchor="middle" class="label">main：ret ← r0 = 30</text>
+
+    <text x="32" y="860" class="section-title">三、把四个问题对应到指令</text>
+
+    <rect x="25" y="880" width="270" height="150" rx="12" class="panel-blue"></rect>
+    <text x="45" y="910" class="section-title">怎么压栈？</text>
+    <text x="45" y="940" class="mono">push {fp, lr}</text>
+    <text x="45" y="966" class="small">保存旧帧指针和返回地址。</text>
+    <text x="45" y="990" class="small">r0/r1 参数不因调用而自动压栈。</text>
+    <text x="45" y="1014" class="small">超出寄存器能力的参数才按 ABI 上栈。</text>
+
+    <rect x="315" y="880" width="270" height="150" rx="12" class="panel-orange"></rect>
+    <text x="335" y="910" class="section-title">实参如何成为形参？</text>
+    <text x="335" y="940" class="mono">str r0, [fp, #-8]</text>
+    <text x="335" y="962" class="mono">str r1, [fp, #-12]</text>
+    <text x="335" y="990" class="small">-O0 下把寄存器值保存为</text>
+    <text x="335" y="1014" class="small">callee 可访问的参数栈槽。</text>
+
+    <rect x="605" y="880" width="270" height="150" rx="12" class="panel-green"></rect>
+    <text x="625" y="910" class="section-title">怎么获取实参？</text>
+    <text x="625" y="940" class="mono">ldr r2, [fp, #-8]</text>
+    <text x="625" y="962" class="mono">ldr r3, [fp, #-12]</text>
+    <text x="625" y="990" class="small">ldr 从形参栈槽加载值，</text>
+    <text x="625" y="1014" class="small">随后参与 add 等计算。</text>
+
+    <rect x="895" y="880" width="280" height="150" rx="12" class="panel-red"></rect>
+    <text x="915" y="910" class="section-title">怎么返回？</text>
+    <text x="915" y="940" class="mono">r0 = result</text>
+    <text x="915" y="962" class="mono">sub sp, fp, #4</text>
+    <text x="915" y="984" class="mono">pop {fp, pc}</text>
+    <text x="915" y="1014" class="small">int 结果走 r0；大对象可能</text>
+    <text x="915" y="1028" class="small">使用隐藏返回地址，见专题笔记。</text>
+  </svg>
